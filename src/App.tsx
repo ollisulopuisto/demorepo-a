@@ -15,26 +15,33 @@ interface GroceryItem {
 
 export default function App() {
   const [items, setItems] = useState<GroceryItem[]>(() => {
+    console.log('[DEBUG] Alustetaan ostoslista...');
     const params = new URLSearchParams(window.location.search);
     const sharedList = params.get('list');
     if (sharedList) {
       try {
+        console.log('[DEBUG] Löydettiin jaettu lista URL:sta, puretaan...');
         const parsed = JSON.parse(decodeURIComponent(atob(sharedList)));
+        console.log('[DEBUG] Jaettu lista purettu onnistuneesti:', parsed);
         window.history.replaceState({}, document.title, window.location.pathname);
         return parsed;
       } catch (e) {
-        console.error("Failed to parse shared list", e);
+        console.error("[DEBUG] Jaetun listan purkaminen epäonnistui:", e);
       }
     }
 
     const saved = localStorage.getItem('weekly-groceries');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        console.log('[DEBUG] Ladattiin lista paikallisesta muistista (localStorage):', parsed);
+        return parsed;
       } catch (e) {
+        console.error("[DEBUG] Paikallisen muistin lukeminen epäonnistui:", e);
         return [];
       }
     }
+    console.log('[DEBUG] Ei aiempaa listaa, aloitetaan tyhjällä listalla.');
     return [];
   });
   const [inputValue, setInputValue] = useState('');
@@ -47,6 +54,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    console.log('[DEBUG] Tallennetaan lista paikalliseen muistiin (localStorage):', items);
     localStorage.setItem('weekly-groceries', JSON.stringify(items));
   }, [items]);
 
@@ -61,19 +69,24 @@ export default function App() {
 
   const shareList = async () => {
     try {
+      console.log('[DEBUG] Luodaan jaettavaa linkkiä listasta:', items);
       const encoded = btoa(encodeURIComponent(JSON.stringify(items)));
       const url = `${window.location.origin}${window.location.pathname}?list=${encoded}`;
+      console.log('[DEBUG] Jaettava URL luotu:', url);
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy', err);
+      console.error('[DEBUG] Linkin kopiointi leikepöydälle epäonnistui:', err);
     }
   };
 
   const addItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim()) {
+      console.log('[DEBUG] Yritettiin lisätä tyhjä tuote, ohitetaan.');
+      return;
+    }
     
     const newItem: GroceryItem = {
       id: Math.random().toString(36).substring(2, 9),
@@ -81,21 +94,25 @@ export default function App() {
       completed: false,
     };
     
+    console.log('[DEBUG] Lisätään uusi tuote:', newItem);
     setItems([newItem, ...items]);
     setInputValue('');
   };
 
   const toggleItem = (id: string) => {
+    console.log('[DEBUG] Vaihdetaan tuotteen tilaa (ostettu/ostamatta), id:', id);
     setItems(items.map(item => 
       item.id === id ? { ...item, completed: !item.completed } : item
     ));
   };
 
   const deleteItem = (id: string) => {
+    console.log('[DEBUG] Poistetaan tuote, id:', id);
     setItems(items.filter(item => item.id !== id));
   };
 
   const clearCompleted = () => {
+    console.log('[DEBUG] Tyhjennetään kaikki ostetut tuotteet.');
     setItems(items.filter(item => !item.completed));
   };
 
